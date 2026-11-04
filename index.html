@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prendre le jeu en main</title>
+<style>
+  :root{--papier:#F7F6F2;--carte:#FFFFFF;--encre:#16243B;--douce:#56657A;--trait:#DCE2EA;--bleu:#2457A6;--bleu-pale:#EAF1FB;--accent:#D2452B;--accent-pale:#FBEAE6;--barre:56px;--pied:64px}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--papier:#121820;--carte:#1B2430;--encre:#E8EDF4;--douce:#AAB8CA;--trait:#2C394A;--bleu:#8DB4EE;--bleu-pale:#1D2B40;--accent:#F08A72;--accent-pale:#3A221D}}
+  :root[data-theme="dark"]{--papier:#121820;--carte:#1B2430;--encre:#E8EDF4;--douce:#AAB8CA;--trait:#2C394A;--bleu:#8DB4EE;--bleu-pale:#1D2B40;--accent:#F08A72;--accent-pale:#3A221D}
+  *{box-sizing:border-box}
+  html{background:var(--papier)}
+  body{margin:0;background:var(--papier);color:var(--encre);font:17px/1.55 "Source Sans 3",-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+  a{color:var(--bleu)}
+  button{font:inherit;color:inherit}
+  .num{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:50%;background:var(--encre);color:var(--papier);font-size:14px;font-weight:700;margin-right:8px;flex:none}
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--trait);background:var(--carte);border-radius:8px;padding:9px 16px;font-weight:600;text-decoration:none;color:var(--encre);cursor:pointer;min-height:44px}
+  .btn.primaire{background:var(--bleu);border-color:var(--bleu);color:#fff}
+  .btn[disabled]{opacity:.4;cursor:default}
+  /* --- the top bar ------------------------------------------------------------------------------ */
+  .barre{display:flex;align-items:center;gap:10px;height:var(--barre);padding:0 16px;background:var(--carte);border-bottom:1px solid var(--trait)}
+  .barre .marque{font-weight:700;margin-right:auto;text-decoration:none;color:var(--encre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .barre a.pdf,.barre a.langue{font-size:15px;font-weight:600;text-decoration:none;border:1px solid var(--trait);border-radius:8px;padding:6px 10px;white-space:nowrap}
+  .bouton-menu{display:none}
+  /* --- without the script: one long page, as printed ---------------------------------------------- */
+  main{max-width:980px;margin:0 auto;padding:20px 16px 60px}
+  nav.menu{display:none}
+  .etape{background:var(--carte);border:1px solid var(--trait);border-radius:12px;padding:20px;margin:16px 0}
+  .pied{display:none}
+  /* --- with the script: a tour, one step at a time ------------------------------------------------------ */
+  html.tour body{height:100vh;overflow:hidden}
+  html.tour .cadre-tour{display:grid;grid-template-columns:270px minmax(0,1fr);height:calc(100vh - var(--barre))}
+  html.tour nav.menu{display:block;overflow-y:auto;border-right:1px solid var(--trait);background:var(--carte);padding:12px 8px}
+  html.tour main{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;min-height:0}
+  html.tour .scene{flex:1;overflow-y:auto;padding:18px 24px}
+  html.tour .etape{display:none;border:none;background:none;padding:0;margin:0 auto;max-width:1180px}
+  html.tour .etape.vue{display:block}
+  html.tour .noscript-hint{display:none}
+  html.tour .pied{display:flex;align-items:center;gap:12px;height:var(--pied);padding:0 24px;border-top:1px solid var(--trait);background:var(--carte)}
+  .pied .ou{margin-right:auto;color:var(--douce);font-size:15px}
+  .pied .ou .court{display:none}
+  @media (max-width:820px){.pied .ou{margin:0 auto}.pied .ou .court{display:inline}}
+  .barre-progres{height:4px;background:var(--trait)}
+  .barre-progres i{display:block;height:100%;background:var(--bleu);width:0;transition:width .2s}
+  /* the menu */
+  nav.menu ol{list-style:none;margin:0;padding:0}
+  nav.menu .m-titre{display:flex;align-items:center;padding:8px 8px;border-radius:8px;font-weight:700;color:var(--encre);text-decoration:none;font-size:15px}
+  nav.menu .m-partie > ol{display:none;margin:2px 0 8px 34px}
+  nav.menu .m-partie.ouvert > ol{display:block}
+  nav.menu .m-partie.ouvert > .m-titre{background:var(--bleu-pale)}
+  nav.menu .m-partie > ol a{display:block;padding:5px 8px;border-radius:6px;color:var(--douce);text-decoration:none;font-size:14.5px;line-height:1.3}
+  nav.menu a.courant{color:var(--bleu);font-weight:700;background:var(--bleu-pale)}
+  /* the step */
+  .fil{display:flex;align-items:center;margin:0 0 4px;color:var(--douce);font-size:15px;font-weight:600}
+  .fil .num{min-width:22px;height:22px;font-size:12px}
+  h1{font-size:36px;line-height:1.15;margin:8px 0 4px}
+  h2{font-size:28px;line-height:1.2;margin:0 0 12px}
+  h3{font-size:20px;margin:18px 0 8px}
+  h4{font-size:15px;margin:16px 0 6px;color:var(--douce);text-transform:uppercase;letter-spacing:.04em}
+  .sous{color:var(--douce);margin:0 0 20px}
+  .intro{font-size:20px;max-width:44em}
+  .ouverture .intro{font-size:22px}
+  .lien-jeu{display:inline-block;background:var(--bleu);color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:8px}
+  .url{color:var(--douce);font-size:15px;word-break:break-all;margin-top:-4px}
+  .faits li,.liste-etapes li,.idees li{margin:8px 0;max-width:46em}
+  .suite span{display:inline-block;background:var(--bleu-pale);border-radius:6px;padding:2px 8px;margin:4px 0}
+  .note{color:var(--douce);font-style:italic}
+  .parcours{background:var(--carte);border:1px solid var(--trait);border-radius:12px;padding:16px 18px;margin:12px 0 20px;max-width:720px}
+  .parcours h2{font-size:20px;margin:0 0 10px}
+  .parcours ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+  .parcours li{display:grid;gap:6px}
+  .parcours li span{display:flex;flex-wrap:wrap;gap:8px}
+  .parcours li a{border:1px solid var(--trait);border-radius:999px;padding:4px 12px;text-decoration:none;font-weight:600;font-size:15px}
+  /* the viewer: the whole screenshot fits; the numbers beside it */
+  .visionneuse{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+  .panneau{min-width:0}
+  .ecran{display:flex;justify-content:center}
+  .cadre{position:relative;width:min(100%, calc((100vh - var(--barre) - var(--pied) - 230px) * var(--w) / var(--h)));aspect-ratio:var(--w) / var(--h);border:1px solid var(--trait);border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  html:not(.tour) .cadre{width:100%}
+  .cadre img{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .zone{position:absolute;border:2px solid transparent;border-radius:6px;pointer-events:none;transition:box-shadow .2s,border-color .2s}
+  .cadre.focus .zone.actif{border-color:var(--accent);box-shadow:0 0 0 9999px rgba(10,16,26,.55)}
+  .mk{position:absolute;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;border:2px solid #fff;background:var(--accent);color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.35);padding:0;z-index:2}
+  .mk.actif{transform:translate(-50%,-50%) scale(1.25);outline:3px solid #fff}
+  .loupe{position:absolute;right:8px;bottom:8px;width:36px;height:36px;border-radius:8px;border:1px solid var(--trait);background:rgba(255,255,255,.92);color:#16243B;cursor:pointer;z-index:3;font-size:18px}
+  html:not(.tour) .loupe{display:none}
+  ol.gestes{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  .geste{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:var(--carte);border:1px solid var(--trait);border-radius:10px;padding:10px 12px;cursor:pointer}
+  .geste.actif{border-color:var(--accent);background:var(--accent-pale)}
+  .pastille{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:14px}
+  .aide-clic{color:var(--douce);font-size:14px;margin:0 0 8px}
+  html:not(.tour) .aide-clic{display:none}
+  dl.trois{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0 0}
+  dl.trois div{background:var(--bleu-pale);border-radius:10px;padding:10px 14px}
+  dt{font-weight:700;font-size:14px;color:var(--bleu);text-transform:uppercase;letter-spacing:.03em}
+  dd{margin:4px 0 0;font-size:16px}
+  .defile{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:15.5px;margin:6px 0 12px;background:var(--carte)}
+  th,td{border:1px solid var(--trait);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--bleu-pale)}
+  table.curseurs td:nth-child(3),table.curseurs td:nth-child(4){white-space:nowrap}
+  /* the enlarged image */
+  .agrandi{position:fixed;inset:0;z-index:20;background:rgba(10,16,26,.86);display:none;overflow:auto;padding:24px}
+  .agrandi.ouvert{display:block}
+  .agrandi img{display:block;max-width:none;width:min(1800px, 100%);margin:0 auto;border-radius:8px}
+  .agrandi button{position:fixed;top:12px;right:12px}
+  /* narrow screens: the menu becomes a drawer, the numbers go under the image */
+  @media (max-width:980px){
+    .visionneuse{grid-template-columns:1fr}
+    html.tour .cadre{width:100%}
+  }
+  @media (max-width:820px){
+    html.tour .cadre-tour{grid-template-columns:1fr}
+    html.tour nav.menu{position:fixed;z-index:15;top:var(--barre);left:0;bottom:0;width:min(320px, 88vw);transform:translateX(-102%);transition:transform .2s;box-shadow:4px 0 16px rgba(0,0,0,.2)}
+    html.tour.menu-ouvert nav.menu{transform:none}
+    html.tour .bouton-menu{display:inline-flex;white-space:nowrap;padding:6px 10px;min-height:40px}
+    .barre a.pdf{display:none}
+    html.tour .scene{padding:14px 16px}
+    html.tour .pied{padding:0 12px}
+    .pied .ou{font-size:13px;text-align:center}
+    .pied .btn{padding:8px 12px;white-space:nowrap}
+    .pied .ou .long{display:none}
+    dl.trois{grid-template-columns:1fr}
+    h2{font-size:23px}
+    h1{font-size:29px}
+    .intro,.ouverture .intro{font-size:18px}
+  }
+  /* print: everything, in order */
+  @media print{
+    @page{size:A4;margin:14mm 12mm}
+    html,body{height:auto!important;overflow:visible!important;background:#fff;color:#000;font-size:12pt}
+    .barre,nav.menu,.pied,.barre-progres,.loupe,.aide-clic,.agrandi,.accueil .btn{display:none!important}
+    .cadre-tour{display:block!important;height:auto!important}
+    main,.scene{display:block!important;overflow:visible!important;padding:0!important;max-width:none!important}
+    .etape{display:block!important;break-inside:avoid;border:1px solid #bbb!important;padding:12px!important;margin:0 0 10px!important}
+    .etape.ouverture{break-before:page;border:none!important;border-top:3px solid #000!important}
+    .visionneuse{display:block}
+    .cadre{width:auto!important;max-height:130mm;margin:0 auto}
+    .cadre{width:min(100%, calc(130mm * var(--w) / var(--h)))!important}
+    .zone{border-color:var(--accent)!important;box-shadow:none!important}
+    .zone.large{border-color:transparent!important}
+    ol.gestes{margin-top:8px;gap:3px}
+    .geste{border:none;padding:2px 0;font-size:11pt}
+    dl.trois div{background:#f1f4f8}
+    dd{font-size:10.5pt}
+    table{font-size:10pt}
+  }
+</style>
+</head>
+<body>
+<header class="barre"><button type="button" class="btn bouton-menu" aria-expanded="false" aria-controls="menu">☰ Menu</button><a class="marque" href="#e0">Prendre le jeu en main</a><a class="pdf" href="guide-professeur-fr.pdf" download>Version PDF</a><a class="langue" href="index-en.html" lang="en">EN</a></header>
+<div class="cadre-tour">
+<nav class="menu" id="menu" aria-label="Le guide"><ol><li class="m-partie" data-ip="0"><a href="#e1" class="m-titre"><span class="num">1</span>Le jeu en 1 minute</a><ol><li><a href="#e2" data-i="1">L’écran du jeu</a></li></ol></li><li class="m-partie" data-ip="1"><a href="#e3" class="m-titre"><span class="num">2</span>L’histoire de départ</a><ol><li><a href="#e4" data-i="3">Un seul service ouvert</a></li><li><a href="#e5" data-i="4">Des heures payées que rien n’emploie</a></li><li><a href="#e6" data-i="5">Les cinq engagements</a></li><li><a href="#e7" data-i="6">Les engagements, et ce qui suit</a></li></ol></li><li class="m-partie" data-ip="2"><a href="#e8" class="m-titre"><span class="num">3</span>Se repérer</a><ol><li><a href="#e9" data-i="8">Vue d’ensemble</a></li><li><a href="#e10" data-i="9">Soins et installations</a></li><li><a href="#e11" data-i="10">Équipe et opérations</a></li><li><a href="#e12" data-i="11">Gestion</a></li><li><a href="#e13" data-i="12">Durabilité</a></li><li><a href="#e14" data-i="13">Résultats</a></li></ol></li><li class="m-partie" data-ip="3"><a href="#e15" class="m-titre"><span class="num">4</span>Une année, pas à pas</a><ol><li><a href="#e16" data-i="15">1 · Choisir une décision</a></li><li><a href="#e17" data-i="16">2 · Lire son effet</a></li><li><a href="#e18" data-i="17">3 · Passer l’année</a></li><li><a href="#e19" data-i="18">4 · Lire ce qui s’est passé</a></li></ol></li><li class="m-partie" data-ip="4"><a href="#e20" class="m-titre"><span class="num">5</span>Les réglages et ce qu’ils changent</a><ol><li><a href="#e21" data-i="20">Ouvrir l’atelier</a></li><li><a href="#e22" data-i="21">Règles et comptes</a></li><li><a href="#e23" data-i="22">Services et prix</a></li><li><a href="#e24" data-i="23">Équipe et salaires</a></li><li><a href="#e25" data-i="24">Salles et équipement</a></li><li><a href="#e26" data-i="25">Fonctionnement</a></li><li><a href="#e27" data-i="26">Clinique de départ</a></li><li><a href="#e28" data-i="27">Calendrier</a></li><li><a href="#e29" data-i="28">Monnaie et noms</a></li><li><a href="#e30" data-i="29">Tous les réglages des règles</a></li></ol></li><li class="m-partie" data-ip="5"><a href="#e31" class="m-titre"><span class="num">6</span>Donner le jeu aux étudiants</a><ol><li><a href="#e32" data-i="31">Charger vos réglages</a></li><li><a href="#e33" data-i="32">Ce que le calendrier montre aux étudiants</a></li></ol></li><li class="m-partie" data-ip="6"><a href="#e34" class="m-titre"><span class="num">7</span>Récupérer les traces</a><ol><li><a href="#e35" data-i="34">Exporter</a></li><li><a href="#e36" data-i="35">Le rapport imprimable</a></li><li><a href="#e37" data-i="36">Les deux exports</a></li></ol></li><li class="m-partie" data-ip="7"><a href="#e38" class="m-titre"><span class="num">8</span>L’adapter à votre cours</a><ol><li><a href="#e39" data-i="38">Trois rythmes</a></li><li><a href="#e40" data-i="39">Idées</a></li></ol></li></ol></nav>
+<main>
+<div class="barre-progres" aria-hidden="true"><i></i></div>
+<div class="scene">
+<section class="etape accueil" id="e0" data-i="-1"><h1>Prendre le jeu en main</h1><p class="sous">Simulation d’une clinique vétérinaire · guide pour les enseignants</p>
+    <div class="parcours"><h2>Par où commencer ?</h2><ul><li><strong>10 minutes pour découvrir</strong><span><a href="#e1">1 · Le jeu en 1 minute</a><a href="#e3">2 · L’histoire de départ</a><a href="#e15">4 · Une année, pas à pas</a></span></li><li><strong>Préparer un cours</strong><span><a href="#e20">5 · Les réglages et ce qu’ils changent</a><a href="#e31">6 · Donner le jeu aux étudiants</a><a href="#e38">8 · L’adapter à votre cours</a></span></li><li><strong>Après le cours</strong><span><a href="#e34">7 · Récupérer les traces</a></span></li></ul></div>
+    <p class="noscript-hint">Les huit parties se suivent ci-dessous.</p>
+    <p><a class="btn primaire" href="#e1">Commencer →</a></p></section>
+<section class="etape ouverture" id="e1" data-i="0" data-ip="0">
+    <p class="fil"><span class="num">1</span>Le jeu en 1 minute</p>
+    <h2>Le jeu en 1 minute</h2><p class="intro">Vos étudiants dirigent une clinique vétérinaire, année après année. Chaque année, ils planifient des décisions, en voient l’effet avant de s’engager, passent l’année, puis lisent ce qui s’est passé. Ceux à qui la clinique a fait des promesses réagissent l’année suivante.</p><p><a class="lien-jeu" href="https://omoijade.github.io/vetsimulation/" target="_blank" rel="noopener">Ouvrir le jeu ↗</a></p><p class="url">https://omoijade.github.io/vetsimulation/</p></section>
+<section class="etape" id="e2" data-i="1" data-ip="0">
+    <p class="fil"><span class="num">1</span>Le jeu en 1 minute</p>
+    <h2>L’écran du jeu</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/ecran-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone large" data-n="1" style="left:0%;top:0%;width:100%;height:9.65%"></span><span class="zone large" data-n="2" style="left:0%;top:9.65%;width:100%;height:6.63%"></span><span class="zone large" data-n="3" style="left:72.03%;top:18.37%;width:26.56%;height:65.6%"></span><span class="zone" data-n="4" style="left:73.36%;top:76.77%;width:23.91%;height:5.12%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:2.5%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:1.8%;top:9.65%" aria-label="2">2</button><button type="button" class="mk" data-n="3" style="left:72.03%;top:18.37%" aria-label="3">3</button><button type="button" class="mk" data-n="4" style="left:73.36%;top:76.77%" aria-label="4">4</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">L’en-tête : l’année, la trésorerie au début de l’année, les décisions encore possibles. À droite : Paramétrage, Mode d’emploi, Exporter, et la langue.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">Les six onglets : chacun montre une partie de la clinique.</span></button></li><li data-n="3"><button type="button" class="geste" data-n="3"><span class="pastille">3</span><span class="texte">« Impact du plan » : la colonne qui reste à droite sur tous les onglets. Elle compare l’année sans rien faire et l’année avec les décisions prévues.</span></button></li><li data-n="4"><button type="button" class="geste" data-n="4"><span class="pastille">4</span><span class="texte">« Passer l’année » : la clinique vit l’année avec ce qui est prévu.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Tout tient sur un écran : les chiffres de la clinique au centre, l’effet des décisions à droite.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Rien n’est engagé tant que l’année n’est pas passée : on peut essayer, regarder, retirer.</dd></div><div><dt>Pour la pédagogie</dt><dd>Le geste central du jeu : comparer une décision à « ne rien faire ».</dd></div></dl></section>
+<section class="etape ouverture" id="e3" data-i="2" data-ip="1">
+    <p class="fil"><span class="num">2</span>L’histoire de départ</p>
+    <h2>L’histoire de départ</h2><p class="intro">La clinique que reçoivent vos étudiants pose déjà une énigme. Ils en sont les associés : elle leur appartient. La D<sup>re</sup> Amina Kone (vétérinaire) et Maya Chen (assistante) sont leurs salariées.</p><ul class="faits"><li>Une seule prestation est ouverte : la consultation. Toutes les demandes de consultation sont servies (1 906 cas).</li><li>Et pourtant la clinique perd environ 49 519 € la première année.</li><li>Maya Chen est payée pour 1 421 heures que rien n’emploie : les services qu’elle sait assurer sont fermés.</li><li>8 700 demandes portent sur des services que la clinique ne propose pas.</li><li>Sans rien changer, la trésorerie de départ (80 000 €) passe sous zéro en année 2.</li></ul><p class="suite"><strong>Ce qu’une semaine de jeu fait découvrir :</strong><br><span>des heures payées et vides</span> → <span>une salle qui se remplit</span> → <span>la ressource qui limite vraiment</span> → <span>un projet d’investissement jugé sur trois ans</span></p></section>
+<section class="etape" id="e4" data-i="3" data-ip="1">
+    <p class="fil"><span class="num">2</span>L’histoire de départ</p>
+    <h2>Un seul service ouvert</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:902;--h:691"><img src="img/depart_services-fr.png" alt="" width="902" height="691" loading="lazy"><span class="zone large" data-n="1" style="left:0.89%;top:14.62%;width:98.23%;height:17.6%"></span><span class="zone" data-n="2" style="left:51.74%;top:73.51%;width:24.57%;height:6.37%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:14.62%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:51.74%;top:73.51%" aria-label="2">2</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">« Services actifs : 1 » — la consultation.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">Les autres services existent, fermés : on les voit en cliquant ici.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Ce que la clinique propose, et ce qu’elle pourrait proposer.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Ouvrir ou fermer un service, son prix, son rythme.</dd></div><div><dt>Pour la pédagogie</dt><dd>La première question des étudiants : « que pourrait-on faire de plus avec ce qu’on a ? »</dd></div></dl></section>
+<section class="etape" id="e5" data-i="4" data-ip="1">
+    <p class="fil"><span class="num">2</span>L’histoire de départ</p>
+    <h2>Des heures payées que rien n’emploie</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:902;--h:820"><img src="img/depart_equipe-fr.png" alt="" width="902" height="820" loading="lazy"><span class="zone large" data-n="1" style="left:0.89%;top:15.61%;width:98.23%;height:21.71%"></span><span class="zone" data-n="2" style="left:52.44%;top:63.21%;width:8.93%;height:4.39%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:15.61%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:52.44%;top:63.21%" aria-label="2">2</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Les heures payées non travaillées, pour toute l’équipe.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">Maya Chen : sa barre montre ses heures, presque toutes sur des services fermés.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Les heures de chacun : travaillées, sur un service fermé, sans demande.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>La répartition des heures de chaque personne (gratuite : elle ne compte jamais comme une décision).</dd></div><div><dt>Pour la pédagogie</dt><dd>Une heure payée et vide coûte autant qu’une heure travaillée : c’est une capacité, pas une économie.</dd></div></dl></section>
+<section class="etape" id="e6" data-i="5" data-ip="1">
+    <p class="fil"><span class="num">2</span>L’histoire de départ</p>
+    <h2>Les cinq engagements</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:902;--h:309"><img src="img/engagements-fr.png" alt="" width="902" height="309" loading="lazy"><span class="zone" data-n="1" style="left:2.99%;top:8.74%;width:12.78%;height:6.8%"></span><button type="button" class="mk" data-n="1" style="left:2.99%;top:8.74%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Vue d’ensemble › Engagements : chaque promesse, tenue (✓) ou non (✗), et ce qui suit l’an prochain.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>À qui la clinique a promis quelque chose, et ce que chacun fera l’an prochain.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Rien directement : on tient ou on manque une promesse par ses décisions.</dd></div><div><dt>Pour la pédagogie</dt><dd>Tenir une promesse en coûte souvent une autre : servir tout le monde charge l’équipe. Il n’y a pas une seule bonne réponse.</dd></div></dl></section>
+<section class="etape" id="e7" data-i="6" data-ip="1">
+    <p class="fil"><span class="num">2</span>L’histoire de départ</p>
+    <h2>Les engagements, et ce qui suit</h2><div class="defile"><table><thead><tr><th>À qui</th><th>La promesse</th><th>Tenue : l’an prochain</th><th>Manquée : l’an prochain</th></tr></thead><tbody><tr><td><strong>La banque</strong></td><td>Atteindre un résultat net non négatif ; Maintenir une trésorerie positive</td><td>emprunt à 6 %</td><td>un an : emprunt à 9 % ; deux ans de suite : emprunt refusé</td></tr><tr><td><strong>Les clients</strong></td><td>Traiter au moins 82 % des demandes ouvertes</td><td>la confiance tient</td><td>les refus s’accumulent et coûtent de la confiance</td></tr><tr><td><strong>L’équipe</strong></td><td>Garder la charge de l’équipe entre 45 % et 94 %</td><td>le climat tient</td><td>le climat baisse, puis les absences montent</td></tr><tr><td><strong>Les confrères</strong></td><td>Exploiter au moins trois services prêts et dotés en personnel</td><td>soutien des référents +2</td><td>soutien des référents -1</td></tr><tr><td><strong>La commune</strong></td><td></td><td>une prime de 2 000 €, avec une mesure de durabilité</td><td>pas de prime</td></tr></tbody></table></div><h3>Les trois cliniques de départ</h3><ul><li><strong>Démarrage équilibré</strong> — Une clinique stable qui peut choisir son orientation.</li><li><strong>Redressement sous contrainte</strong> — Trésorerie faible, équipe fatiguée et demande courante pressante exigent un redressement prudent.</li><li><strong>Clinique spécialisée en croissance</strong> — Une clinique d’imagerie doit transformer des actifs coûteux en croissance durable.</li></ul><p class="note">Le scénario se choisit dans Paramétrage, avant l’année 1.</p></section>
+<section class="etape ouverture" id="e8" data-i="7" data-ip="2">
+    <p class="fil"><span class="num">3</span>Se repérer</p>
+    <h2>Se repérer</h2><p class="intro">Six onglets, une colonne à droite, et un ⓘ à côté de chaque chiffre : ce qu’il est, d’où il vient, pourquoi il compte.</p></section>
+<section class="etape" id="e9" data-i="8" data-ip="2">
+    <p class="fil"><span class="num">3</span>Se repérer</p>
+    <h2>Vue d’ensemble</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/onglet_overview-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:1.56%;top:10.81%;width:11.96%;height:4.19%"></span><span class="zone" data-n="2" style="left:1.41%;top:45.98%;width:15.99%;height:14.49%"></span><span class="zone" data-n="3" style="left:73.44%;top:39.03%;width:23.75%;height:2.98%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:10.81%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:1.8%;top:45.98%" aria-label="2">2</button><button type="button" class="mk" data-n="3" style="left:73.44%;top:39.03%" aria-label="3">3</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">L’onglet.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">De gauche à droite : les foyers clients, leurs demandes, les cas traités.</span></button></li><li data-n="3"><button type="button" class="geste" data-n="3"><span class="pastille">3</span><span class="texte">Le résultat, la charge et le climat de l’équipe, le carbone, la confiance ; plus bas, les engagements.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>L’année en un coup d’œil.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Rien : c’est l’endroit où l’on lit.</dd></div><div><dt>Pour la pédagogie</dt><dd>Bon point de départ d’un débrief : « qu’est-ce qui vous surprend ici ? »</dd></div></dl></section>
+<section class="etape" id="e10" data-i="9" data-ip="2">
+    <p class="fil"><span class="num">3</span>Se repérer</p>
+    <h2>Soins et installations</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/onglet_care-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:13.84%;top:10.81%;width:14.91%;height:4.19%"></span><span class="zone" data-n="2" style="left:55.65%;top:76.5%;width:13.49%;height:5.12%"></span><button type="button" class="mk" data-n="1" style="left:13.84%;top:10.81%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:55.65%;top:76.5%" aria-label="2">2</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">L’onglet.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">« Explorer les services » : chaque service, ce qu’il demande (personnes, salle, équipement, compétence) et ce qu’il rapporte.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Les services, les salles et les équipements, et leur utilisation.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Ouvrir ou fermer un service ; son prix ; son rythme ; ajouter une salle ou un équipement.</dd></div><div><dt>Pour la pédagogie</dt><dd>Où l’on découvre qu’une salle pleine limite tout.</dd></div></dl></section>
+<section class="etape" id="e11" data-i="10" data-ip="2">
+    <p class="fil"><span class="num">3</span>Se repérer</p>
+    <h2>Équipe et opérations</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/onglet_team-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:29.06%;top:10.81%;width:14.78%;height:4.19%"></span><span class="zone" data-n="2" style="left:74.06%;top:48.9%;width:8.11%;height:3.63%"></span><button type="button" class="mk" data-n="1" style="left:29.06%;top:10.81%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:74.06%;top:48.9%" aria-label="2">2</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">L’onglet.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">La charge de l’équipe : la part des heures payées qui sert vraiment.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Les personnes, leurs heures, le climat de l’équipe.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Les heures de chacun, les horaires d’ouverture, les salaires, embaucher, former.</dd></div><div><dt>Pour la pédagogie</dt><dd>Le lieu des compromis humains : heures supplémentaires, fatigue, départs.</dd></div></dl></section>
+<section class="etape" id="e12" data-i="11" data-ip="2">
+    <p class="fil"><span class="num">3</span>Se repérer</p>
+    <h2>Gestion</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/onglet_business-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:44.14%;top:10.81%;width:6.91%;height:4.19%"></span><span class="zone large" data-n="2" style="left:1.41%;top:32.33%;width:69.22%;height:21.98%"></span><span class="zone" data-n="3" style="left:2.89%;top:72.88%;width:55.64%;height:2.44%"></span><button type="button" class="mk" data-n="1" style="left:44.14%;top:10.81%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:1.8%;top:32.33%" aria-label="2">2</button><button type="button" class="mk" data-n="3" style="left:2.89%;top:72.88%" aria-label="3">3</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">L’onglet.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">La barre de l’argent : les recettes, et ce qu’elles paient — coûts variables, coûts fixes, dépenses ponctuelles.</span></button></li><li data-n="3"><button type="button" class="geste" data-n="3"><span class="pastille">3</span><span class="texte">Le compte de résultat, ligne par ligne, chaque ligne avec son ⓘ.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Trois sortes de coûts (par cas, chaque année, une fois) et trois résultats (marge, résultat courant, résultat net), la trésorerie à part.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Les prix, le financement (emprunt), le marché visé, l’emplacement.</dd></div><div><dt>Pour la pédagogie</dt><dd>L’économie au service d’une décision, pas pour elle-même.</dd></div></dl></section>
+<section class="etape" id="e13" data-i="12" data-ip="2">
+    <p class="fil"><span class="num">3</span>Se repérer</p>
+    <h2>Durabilité</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/onglet_sustainability-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:51.36%;top:10.81%;width:8.18%;height:4.19%"></span><button type="button" class="mk" data-n="1" style="left:51.36%;top:10.81%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">L’onglet : l’empreinte carbone, ses sources, et les mesures possibles.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Le carbone total et par cas, et d’où il vient.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Les mesures (énergie, déchets, accès) — elles coûtent.</dd></div><div><dt>Pour la pédagogie</dt><dd>Une troisième dimension à peser avec l’argent et les gens.</dd></div></dl></section>
+<section class="etape" id="e14" data-i="13" data-ip="2">
+    <p class="fil"><span class="num">3</span>Se repérer</p>
+    <h2>Résultats</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/onglet_results-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:59.85%;top:10.81%;width:7.98%;height:4.19%"></span><span class="zone" data-n="2" style="left:2.89%;top:73.44%;width:43.85%;height:2.44%"></span><button type="button" class="mk" data-n="1" style="left:59.85%;top:10.81%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:2.89%;top:73.44%" aria-label="2">2</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">L’onglet, après une année passée.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">« Signaux de l’année » : une ligne par signal — ce qui a bougé, ce que ça fera l’an prochain, et où agir.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Ce qui s’est vraiment passé, et la contrainte principale.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Rien : chaque signal mène à l’écran où l’on agit.</dd></div><div><dt>Pour la pédagogie</dt><dd>La matière première d’un débrief : prévu contre réalisé.</dd></div></dl></section>
+<section class="etape ouverture" id="e15" data-i="14" data-ip="3">
+    <p class="fil"><span class="num">4</span>Une année, pas à pas</p>
+    <h2>Une année, pas à pas</h2><p class="intro">Cinq gestes, toujours les mêmes.</p></section>
+<section class="etape" id="e16" data-i="15" data-ip="3">
+    <p class="fil"><span class="num">4</span>Une année, pas à pas</p>
+    <h2>1 · Choisir une décision</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:736;--h:1500"><img src="img/annee_choisir-fr.png" alt="" width="736" height="1500" loading="lazy"><span class="zone" data-n="1" style="left:3.8%;top:18.85%;width:12.32%;height:1%"></span><span class="zone large" data-n="2" style="left:3.8%;top:67.58%;width:92.39%;height:2.93%"></span><button type="button" class="mk" data-n="1" style="left:3.8%;top:18.85%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:3.8%;top:67.58%" aria-label="2">2</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Un service, ici la vaccination : ce qu’il demande, ce qu’il rapporte, ce que la décision change.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">« Ouvrir le service » : la décision entre dans le plan. Rien n’est encore dépensé.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Les conséquences avant de décider.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Une décision à la fois.</dd></div><div><dt>Pour la pédagogie</dt><dd>Chaque décision dit si elle vaut « une fois », « chaque année » ou « jusqu’au prochain changement ».</dd></div></dl></section>
+<section class="etape" id="e17" data-i="16" data-ip="3">
+    <p class="fil"><span class="num">4</span>Une année, pas à pas</p>
+    <h2>2 · Lire son effet</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:356;--h:682"><img src="img/annee_impact-fr.png" alt="" width="356" height="682" loading="lazy"><span class="zone" data-n="1" style="left:33.98%;top:12.75%;width:18.67%;height:5.77%"></span><span class="zone" data-n="2" style="left:54.33%;top:14.68%;width:14.62%;height:1.92%"></span><span class="zone" data-n="3" style="left:70.64%;top:14.68%;width:19.81%;height:1.92%"></span><span class="zone" data-n="4" style="left:82.3%;top:69.51%;width:7.58%;height:3.96%"></span><button type="button" class="mk" data-n="1" style="left:33.98%;top:12.75%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:54.33%;top:14.68%" aria-label="2">2</button><button type="button" class="mk" data-n="3" style="left:70.64%;top:14.68%" aria-label="3">3</button><button type="button" class="mk" data-n="4" style="left:82.3%;top:69.51%" aria-label="4">4</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">« Référence sans action » : l’année si l’on ne fait rien.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">« Planifié » : l’année avec les décisions prévues.</span></button></li><li data-n="3"><button type="button" class="geste" data-n="3"><span class="pastille">3</span><span class="texte">« Différence » : l’effet des décisions. C’est elle qui répond.</span></button></li><li data-n="4"><button type="button" class="geste" data-n="4"><span class="pastille">4</span><span class="texte">Retirer une décision du plan.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Ce que les décisions changent, sur l’argent, les cas, l’équipe, les clients, le carbone.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Ajouter, retirer, comparer autant que l’on veut.</dd></div><div><dt>Pour la pédagogie</dt><dd>Comparer à « ne rien faire », jamais dans l’absolu.</dd></div></dl></section>
+<section class="etape" id="e18" data-i="17" data-ip="3">
+    <p class="fil"><span class="num">4</span>Une année, pas à pas</p>
+    <h2>3 · Passer l’année</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:736;--h:446"><img src="img/annee_passer-fr.png" alt="" width="736" height="446" loading="lazy"><span class="zone large" data-n="1" style="left:4.08%;top:17.05%;width:91.85%;height:4.04%"></span><span class="zone" data-n="2" style="left:15.33%;top:83.39%;width:19.02%;height:9.87%"></span><button type="button" class="mk" data-n="1" style="left:4.08%;top:17.05%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:15.33%;top:83.39%" aria-label="2">2</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Ce qui est prévu, et les alertes encore visibles.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">Confirmer : la clinique vit l’année.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Un dernier regard avant de s’engager.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Revenir en arrière si besoin.</dd></div><div><dt>Pour la pédagogie</dt><dd>Le moment de demander : « qu’attendez-vous ? »</dd></div></dl></section>
+<section class="etape" id="e19" data-i="18" data-ip="3">
+    <p class="fil"><span class="num">4</span>Une année, pas à pas</p>
+    <h2>4 · Lire ce qui s’est passé</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:902;--h:820"><img src="img/annee_signaux-fr.png" alt="" width="902" height="820" loading="lazy"><span class="zone large" data-n="1" style="left:2.99%;top:58.73%;width:62.22%;height:2.56%"></span><button type="button" class="mk" data-n="1" style="left:2.99%;top:58.73%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Les signaux de l’année : chaque cause, son effet l’an prochain, et où agir.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Le résultat de l’année et ses causes.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>—</dd></div><div><dt>Pour la pédagogie</dt><dd>Les promesses réagissent un an plus tard : un effet se voit souvent l’année suivante.</dd></div></dl></section>
+<section class="etape ouverture" id="e20" data-i="19" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Les réglages et ce qu’ils changent</h2><p class="intro">Tout se règle dans l’atelier de l’enseignant, sans rien programmer. Le panneau de droite montre l’effet sur la clinique avant d’appliquer.</p></section>
+<section class="etape" id="e21" data-i="20" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Ouvrir l’atelier</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:736;--h:1500"><img src="img/parametrage-fr.png" alt="" width="736" height="1500" loading="lazy"><span class="zone" data-n="1" style="left:3.8%;top:2.6%;width:34.05%;height:1.73%"></span><span class="zone large" data-n="2" style="left:5.84%;top:54.38%;width:88.32%;height:1.13%"></span><span class="zone" data-n="3" style="left:5.84%;top:57.45%;width:35.33%;height:2.53%"></span><button type="button" class="mk" data-n="1" style="left:3.8%;top:2.6%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:5.84%;top:54.38%" aria-label="2">2</button><button type="button" class="mk" data-n="3" style="left:5.84%;top:57.45%" aria-label="3">3</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Paramétrage (en haut à droite).</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">« Atelier de l’enseignant ».</span></button></li><li data-n="3"><button type="button" class="geste" data-n="3"><span class="pastille">3</span><span class="texte">Le code de l’atelier : ATELIER-CLINIQUE, puis « Ouvrir ».</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Le paramétrage de la partie, et l’accès à l’atelier.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Le scénario de départ se choisit aussi ici (plus bas).</dd></div><div><dt>Pour la pédagogie</dt><dd>Les étudiants n’ont pas besoin du code : ils reçoivent vos réglages en fichier.</dd></div></dl></section>
+<section class="etape" id="e22" data-i="21" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Règles et comptes</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/atelier_regles-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:1.56%;top:12.67%;width:15.63%;height:45.58%"></span><span class="zone" data-n="2" style="left:46.56%;top:28.72%;width:25.08%;height:4.42%"></span><span class="zone" data-n="3" style="left:46.72%;top:45%;width:19.61%;height:4.42%"></span><span class="zone" data-n="4" style="left:76.17%;top:14.42%;width:21.09%;height:4.39%"></span><span class="zone" data-n="5" style="left:46.87%;top:3.95%;width:13.87%;height:5.12%"></span><span class="zone" data-n="6" style="left:61.36%;top:3.95%;width:18.76%;height:5.12%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:12.67%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:46.56%;top:28.72%" aria-label="2">2</button><button type="button" class="mk" data-n="3" style="left:46.72%;top:45%" aria-label="3">3</button><button type="button" class="mk" data-n="4" style="left:76.17%;top:14.42%" aria-label="4">4</button><button type="button" class="mk" data-n="5" style="left:46.87%;top:3.95%" aria-label="5">5</button><button type="button" class="mk" data-n="6" style="left:61.36%;top:3.95%" aria-label="6">6</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Les sections de l’atelier.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">Comptes : « Simples » (par défaut) ou « Belges détaillés ».</span></button></li><li data-n="3"><button type="button" class="geste" data-n="3"><span class="pastille">3</span><span class="texte">Chaque réglage, nommé par son effet, avec un curseur.</span></button></li><li data-n="4"><button type="button" class="geste" data-n="4"><span class="pastille">4</span><span class="texte">Ce que vos réglages changent sur la clinique, cette année et la suivante.</span></button></li><li data-n="5"><button type="button" class="geste" data-n="5"><span class="pastille">5</span><span class="texte">Essayer sur votre propre partie.</span></button></li><li data-n="6"><button type="button" class="geste" data-n="6"><span class="pastille">6</span><span class="texte">Le fichier à donner aux étudiants.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Les règles du modèle : comment les clients, l’équipe, l’argent réagissent.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Comptes simples : trois sortes de coûts, trois résultats, la D<sup>re</sup> Kone salariée. Comptes détaillés : EBE, amortissements, dividendes. La liste complète des curseurs est à la fin de cette partie.</dd></div><div><dt>Pour la pédagogie</dt><dd>Changer un seul réglage pour discuter un mécanisme : « et si les familles partaient deux fois plus après un refus ? »</dd></div></dl></section>
+<section class="etape" id="e23" data-i="22" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Services et prix</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/atelier_services-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:1.56%;top:17.79%;width:15.63%;height:4.65%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:17.79%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">La section.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Pour chaque service : prix de base, fournitures par cas, temps par cas, part du vétérinaire, demande, sensibilité au prix ; et les prix acceptés par type de clients.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Ajuster aux prix de votre région.</dd></div><div><dt>Pour la pédagogie</dt><dd>Rendre un service plus ou moins rentable pour orienter la discussion.</dd></div></dl></section>
+<section class="etape" id="e24" data-i="23" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Équipe et salaires</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/atelier_equipe-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:1.56%;top:22.91%;width:15.63%;height:4.65%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:22.91%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">La section.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>L’équipe de départ et les candidats : salaires, heures, compétences.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Les salaires de votre pays.</dd></div><div><dt>Pour la pédagogie</dt><dd>Le coût d’une embauche face à ce qu’elle apporte.</dd></div></dl></section>
+<section class="etape" id="e25" data-i="24" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Salles et équipement</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/atelier_salles-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:1.56%;top:28.02%;width:15.63%;height:4.65%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:28.02%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">La section.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Loyers, aménagements, achats, locations, entretien, capacités.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Les prix d’un équipement, la capacité d’une salle.</dd></div><div><dt>Pour la pédagogie</dt><dd>Acheter ou louer : un choix à juger sur plusieurs années.</dd></div></dl></section>
+<section class="etape" id="e26" data-i="25" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Fonctionnement</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/atelier_fonctionnement-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:1.56%;top:33.14%;width:15.63%;height:4.65%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:33.14%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">La section.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Horaires d’ouverture, stock, stratégies d’équipe, communication, implantations, durabilité.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Ce que chaque option coûte et rapporte.</dd></div><div><dt>Pour la pédagogie</dt><dd>Les leviers qui ne demandent pas d’agrandir.</dd></div></dl></section>
+<section class="etape" id="e27" data-i="26" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Clinique de départ</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/atelier_depart-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:1.56%;top:38.26%;width:15.63%;height:4.65%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:38.26%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">La section.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Pour chaque scénario : trésorerie, foyers, confiance, climat, nom, description.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Une clinique plus riche, plus pauvre, plus fatiguée.</dd></div><div><dt>Pour la pédagogie</dt><dd>Le même cours, une autre histoire de départ.</dd></div></dl></section>
+<section class="etape" id="e28" data-i="27" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Calendrier</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/atelier_calendrier-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:19.77%;top:29.77%;width:18.75%;height:4.42%"></span><span class="zone large" data-n="2" style="left:19.84%;top:53.14%;width:59.87%;height:100%"></span><button type="button" class="mk" data-n="1" style="left:19.77%;top:29.77%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:19.84%;top:53.14%" aria-label="2">2</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Partir d’un rythme prêt à l’emploi.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">Une ligne par séance : ses années, guidée ou libre, le nombre de décisions par année, ce qui s’ouvre.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Le rythme du cours : ce que les étudiants peuvent faire, séance par séance.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Les séances, les années, ce qui s’ouvre et quand. L’atelier vérifie que le calendrier tient.</dd></div><div><dt>Pour la pédagogie</dt><dd>Voir la partie 8 : l’adapter à votre cours.</dd></div></dl></section>
+<section class="etape" id="e29" data-i="28" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Monnaie et noms</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/atelier_monnaie-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:1.56%;top:48.49%;width:15.63%;height:4.65%"></span><span class="zone" data-n="2" style="left:1.56%;top:53.6%;width:15.63%;height:4.65%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:48.49%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:1.8%;top:53.6%" aria-label="2">2</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">La monnaie affichée, et un facteur pour convertir tous les montants.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">Les noms, en français et en anglais.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>La devise et les noms de la clinique.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Situer la clinique dans un autre pays.</dd></div><div><dt>Pour la pédagogie</dt><dd>Le même raisonnement, un autre contexte.</dd></div></dl></section>
+<section class="etape" id="e30" data-i="29" data-ip="4">
+    <p class="fil"><span class="num">5</span>Les réglages et ce qu’ils changent</p>
+    <h2>Tous les réglages des règles</h2><h4>Clients</h4><div class="defile"><table class="curseurs"><thead><tr><th>Réglage</th><th>Ce qu’il fait</th><th>D’origine</th><th>De … à</th></tr></thead><tbody><tr><td><strong>Familles qui partent après un refus</strong></td><td>Foyers perdus pour de bon par demande refusée.</td><td>6 %</td><td>0 % – 20 %</td></tr><tr><td><strong>Clients gagnés en servant tout le monde</strong></td><td>Croissance des foyers quand toutes les demandes sont servies.</td><td>13 %</td><td>0 % – 30 %</td></tr><tr><td><strong>Clients gagnés par la confiance</strong></td><td>Croissance des foyers par point de confiance au-dessus de 50.</td><td>0 %</td><td>0 % – 1 %</td></tr><tr><td><strong>Seuil où les clients partent</strong></td><td>Sous cette confiance, des foyers partent chaque année.</td><td>45</td><td>20 – 60</td></tr><tr><td><strong>Clients qui partent sous ce seuil</strong></td><td>Part des foyers perdus chaque année sous le seuil.</td><td>-3 %</td><td>-15 % – 0 %</td></tr><tr><td><strong>Demande d’un service neuf</strong></td><td>Part de sa demande qu’un service reçoit sa première année.</td><td>60 %</td><td>30 % – 100 %</td></tr><tr><td><strong>Clients qui fuient un prix trop haut</strong></td><td>Vitesse à laquelle la demande baisse au-dessus du prix accepté.</td><td>4</td><td>1 – 8</td></tr><tr><td><strong>Prix accepté grâce à la confiance</strong></td><td>Hausse du prix accepté par point de confiance au-dessus de 50.</td><td>0 %</td><td>0 % – 1 %</td></tr></tbody></table></div><h4>Confiance</h4><div class="defile"><table class="curseurs"><thead><tr><th>Réglage</th><th>Ce qu’il fait</th><th>D’origine</th><th>De … à</th></tr></thead><tbody><tr><td><strong>Confiance gagnée en servant</strong></td><td>Points de confiance par an quand toutes les demandes sont servies.</td><td>3,2</td><td>0 – 8</td></tr><tr><td><strong>Confiance perdue en refusant</strong></td><td>Points de confiance perdus par an quand toutes les demandes sont refusées.</td><td>5,8</td><td>0 – 10</td></tr><tr><td><strong>Confiance usée par les refus accumulés</strong></td><td>Au-dessus de 50 de pression d’accès, points de confiance perdus par point.</td><td>0,1</td><td>0 – 0,3</td></tr><tr><td><strong>Confiance perdue par un prix trop haut</strong></td><td>Points perdus par part de prix au-dessus du prix accepté.</td><td>20</td><td>0 – 40</td></tr><tr><td><strong>Effet d’une action répétée</strong></td><td>Une réunion ou une communication refaite l’année suivante agit × ce nombre.</td><td>×0,5</td><td>×0 – ×1</td></tr></tbody></table></div><h4>Équipe</h4><div class="defile"><table class="curseurs"><thead><tr><th>Réglage</th><th>Ce qu’il fait</th><th>D’origine</th><th>De … à</th></tr></thead><tbody><tr><td><strong>Une équipe fatiguée ralentit</strong></td><td>Temps en plus par cas, par point de climat sous le seuil de fatigue.</td><td>0 %</td><td>0 % – 1 %</td></tr><tr><td><strong>Seuil de fatigue</strong></td><td>Sous ce climat, l’équipe travaille plus lentement.</td><td>50</td><td>30 – 70</td></tr><tr><td><strong>Absences quand le climat baisse</strong></td><td>Heures d’absence en plus par point de climat sous 50.</td><td>0 %</td><td>0 % – 1 %</td></tr><tr><td><strong>Seuil de démission</strong></td><td>Sous ce climat, quelqu’un démissionne en fin d’année.</td><td>30</td><td>0 – 50</td></tr><tr><td><strong>Salaire d’une heure supplémentaire</strong></td><td>Combien coûte une heure supplémentaire, par rapport à une heure normale.</td><td>×1,25</td><td>×1 – ×2</td></tr><tr><td><strong>Heures sup. qui reviennent en absences</strong></td><td>Absence l’année suivante, par part d’heures supplémentaires travaillées.</td><td>0,3</td><td>0 – 1</td></tr><tr><td><strong>Climat usé par les heures sup.</strong></td><td>Points de climat perdus par part d’heures supplémentaires.</td><td>20</td><td>0 – 40</td></tr><tr><td><strong>Climat et salaire</strong></td><td>Points de climat par part de salaire au-dessus de la référence.</td><td>40</td><td>0 – 80</td></tr></tbody></table></div><h4>Argent</h4><div class="defile"><table class="curseurs"><thead><tr><th>Réglage</th><th>Ce qu’il fait</th><th>D’origine</th><th>De … à</th></tr></thead><tbody><tr><td><strong>Impôt sur le bénéfice</strong></td><td>Part d’un résultat positif payée en impôt.</td><td>25 %</td><td>0 % – 50 %</td></tr><tr><td><strong>Charges sociales</strong></td><td>Charges patronales ajoutées aux salaires.</td><td>25 %</td><td>0 % – 50 %</td></tr><tr><td><strong>Ce que les associés retirent</strong></td><td>Part d’un bénéfice que les associés retirent chaque année (comptes simples).</td><td>50 %</td><td>0 % – 100 %</td></tr><tr><td><strong>Frais d’administration</strong></td><td>Coût fixe d’administration par an.</td><td>14 000 €</td><td>0 € – 40 000 €</td></tr></tbody></table></div><h4>Fonctionnement</h4><div class="defile"><table class="curseurs"><thead><tr><th>Réglage</th><th>Ce qu’il fait</th><th>D’origine</th><th>De … à</th></tr></thead><tbody><tr><td><strong>Ruptures de stock (stratégie basique)</strong></td><td>Part des cas perdus faute de fournitures avec la stratégie de base.</td><td>6 %</td><td>0 % – 20 %</td></tr></tbody></table></div><h4>Promesses</h4><div class="defile"><table class="curseurs"><thead><tr><th>Réglage</th><th>Ce qu’il fait</th><th>D’origine</th><th>De … à</th></tr></thead><tbody><tr><td><strong>Taux d’emprunt après une promesse manquée</strong></td><td>Taux du prochain emprunt après une année où la banque n’a pas eu sa promesse.</td><td>9 %</td><td>6 % – 20 %</td></tr><tr><td><strong>Prime de la commune</strong></td><td>Prime versée l’année après une promesse carbone tenue.</td><td>2 000 €</td><td>0 € – 10 000 €</td></tr><tr><td><strong>Référents gagnés par la promesse aux confrères</strong></td><td>Points de soutien des référents par an quand assez de services tournent.</td><td>2</td><td>0 – 6</td></tr></tbody></table></div></section>
+<section class="etape ouverture" id="e31" data-i="30" data-ip="5">
+    <p class="fil"><span class="num">6</span>Donner le jeu aux étudiants</p>
+    <h2>Donner le jeu aux étudiants</h2><p class="intro">Trois cas, du plus simple au plus réglé.</p><ol class="liste-etapes"><li><strong>Sans rien changer :</strong> donnez le lien <a href="https://omoijade.github.io/vetsimulation/">https://omoijade.github.io/vetsimulation/</a>. Les étudiants jouent le jeu d’origine.</li><li><strong>Avec vos réglages :</strong> dans l’atelier, « Télécharger pour les étudiants », puis donnez ce fichier avec le lien (par mail ou sur la page du cours).</li><li><strong>Ce que font les étudiants :</strong> Paramétrage › « Charger des règles de l’enseignant », avant l’année 1. Ensuite, « Enregistrer la clinique » en fin de séance pour la garder, et « Charger une clinique » pour la reprendre sur un autre ordinateur.</li></ol><p class="note">La clinique reste dans le navigateur de l’étudiant : rien n’est envoyé nulle part.</p></section>
+<section class="etape" id="e32" data-i="31" data-ip="5">
+    <p class="fil"><span class="num">6</span>Donner le jeu aux étudiants</p>
+    <h2>Charger vos réglages</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:736;--h:1500"><img src="img/charger_regles-fr.png" alt="" width="736" height="1500" loading="lazy"><span class="zone" data-n="1" style="left:5.84%;top:50.65%;width:36.7%;height:2.93%"></span><button type="button" class="mk" data-n="1" style="left:5.84%;top:50.65%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Le bouton que les étudiants utilisent, avant l’année 1.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Où vos réglages entrent dans la partie d’un étudiant.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>—</dd></div><div><dt>Pour la pédagogie</dt><dd>Toutes les équipes partent alors des mêmes règles : leurs résultats se comparent.</dd></div></dl></section>
+<section class="etape" id="e33" data-i="32" data-ip="5">
+    <p class="fil"><span class="num">6</span>Donner le jeu aux étudiants</p>
+    <h2>Ce que le calendrier montre aux étudiants</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:59"><img src="img/ligne_calendrier-fr.png" alt="" width="1280" height="59" loading="lazy"><span class="zone" data-n="1" style="left:1.56%;top:35.59%;width:2.8%;height:27.12%"></span><button type="button" class="mk" data-n="1" style="left:1.8%;top:35.59%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Sous l’en-tête : la séance, l’année, guidée ou libre, le nombre de décisions, ce qui est permis.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Ce que les étudiants peuvent faire maintenant. Ce qui n’est pas encore ouvert porte un 🔒.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>Dans l’atelier › Calendrier.</dd></div><div><dt>Pour la pédagogie</dt><dd>Une seule décision dans une année guidée concentre la classe sur un outil.</dd></div></dl></section>
+<section class="etape ouverture" id="e34" data-i="33" data-ip="6">
+    <p class="fil"><span class="num">7</span>Récupérer les traces</p>
+    <h2>Récupérer les traces</h2><p class="intro">À la fin, chaque équipe exporte sa partie. Deux formats, deux usages.</p></section>
+<section class="etape" id="e35" data-i="34" data-ip="6">
+    <p class="fil"><span class="num">7</span>Récupérer les traces</p>
+    <h2>Exporter</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:736;--h:1400"><img src="img/exporter-fr.png" alt="" width="736" height="1400" loading="lazy"><span class="zone large" data-n="1" style="left:3.8%;top:12.62%;width:92.39%;height:2.71%"></span><span class="zone" data-n="2" style="left:7.47%;top:28.76%;width:24.51%;height:3.14%"></span><span class="zone" data-n="3" style="left:5.98%;top:45.12%;width:31.74%;height:3.14%"></span><span class="zone" data-n="4" style="left:52.99%;top:45.12%;width:33.46%;height:3.14%"></span><button type="button" class="mk" data-n="1" style="left:3.8%;top:12.62%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:7.47%;top:28.76%" aria-label="2">2</button><button type="button" class="mk" data-n="3" style="left:5.98%;top:45.12%" aria-label="3">3</button><button type="button" class="mk" data-n="4" style="left:52.99%;top:45.12%" aria-label="4">4</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Le code d’équipe (par exemple G-07) : la seule identité dans les fichiers, jamais un nom.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">Enregistrer la clinique : un fichier pour la reprendre, ce n’est pas un fichier d’analyse.</span></button></li><li data-n="3"><button type="button" class="geste" data-n="3"><span class="pastille">3</span><span class="texte">Le rapport imprimable (PDF) : lisible, année par année.</span></button></li><li data-n="4"><button type="button" class="geste" data-n="4"><span class="pastille">4</span><span class="texte">Le fichier d’analyse : tout, structuré.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Le bouton « Exporter », en haut à droite, ouvre ce panneau.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>—</dd></div><div><dt>Pour la pédagogie</dt><dd>Demander l’export en fin de séance donne une trace de chaque équipe.</dd></div></dl></section>
+<section class="etape" id="e36" data-i="35" data-ip="6">
+    <p class="fil"><span class="num">7</span>Récupérer les traces</p>
+    <h2>Le rapport imprimable</h2><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:820"><img src="img/rapport-fr.png" alt="" width="1280" height="820" loading="lazy"><span class="zone large" data-n="1" style="left:2.5%;top:3.9%;width:95%;height:5.46%"></span><button type="button" class="mk" data-n="1" style="left:2.5%;top:3.9%" aria-label="1">1</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Un rapport par équipe : les règles jouées, puis chaque année.</span></button></li></ol></div>
+  </div><dl class="trois"><div><dt>Ce que ça montre</dt><dd>Les décisions, les heures, le carbone, les réflexions écrites de l’équipe, année par année.</dd></div><div><dt>Ce qu’on peut changer</dt><dd>—</dd></div><div><dt>Pour la pédagogie</dt><dd>Un support de débrief, ou une pièce de portfolio.</dd></div></dl></section>
+<section class="etape" id="e37" data-i="36" data-ip="6">
+    <p class="fil"><span class="num">7</span>Récupérer les traces</p>
+    <h2>Les deux exports</h2><div class="defile"><table><thead><tr><th>Export</th><th>Ce que c’est</th><th>Ce qu’il contient</th><th>Pour</th></tr></thead><tbody><tr><td><strong>Rapport imprimable (PDF)</strong></td><td>un rapport lisible, année par année</td><td>les règles jouées, les décisions, les heures, le carbone, les réflexions écrites de l’équipe</td><td>un débrief, un portfolio</td></tr><tr><td><strong>Fichier d’analyse (JSON)</strong></td><td>tout, structuré</td><td>chaque année ; chaque décision avec son heure et ses révisions ; la prévision montrée avant l’année contre ce qui s’est passé ; la contrainte prévue contre celle qui est apparue ; les essais rechargés</td><td>comparer les équipes, une recherche</td></tr></tbody></table></div>
+  <p><strong>Usages pédagogiques</strong></p><ul><li>comparer les équipes sur les mêmes engagements ;</li><li>voir si une équipe a planifié avant de passer une année ;</li><li>trouver l’année où une promesse a cassé.</li></ul>
+  <p class="note">Avant tout usage de recherche, demandez le consentement des étudiants.</p></section>
+<section class="etape ouverture" id="e38" data-i="37" data-ip="7">
+    <p class="fil"><span class="num">8</span>L’adapter à votre cours</p>
+    <h2>L’adapter à votre cours</h2><p class="intro">Trois rythmes prêts à l’emploi dans l’atelier › Calendrier, et quelques idées.</p></section>
+<section class="etape" id="e39" data-i="38" data-ip="7">
+    <p class="fil"><span class="num">8</span>L’adapter à votre cours</p>
+    <h2>Trois rythmes</h2><div class="defile"><table><thead><tr><th>Rythme</th><th>Pour</th><th>Séances</th><th>Années</th></tr></thead><tbody><tr><td><strong>Semaine ULiège</strong></td><td>une semaine intensive : cinq matinées, une année guidée puis une libre chaque jour</td><td>4</td><td>1–9</td></tr><tr><td><strong>Une séance de 3 h</strong></td><td>une seule séance, tout ouvert : découvrir le jeu ou un atelier</td><td>1</td><td>1–3</td></tr><tr><td><strong>Une année par semaine</strong></td><td>un semestre : une année par semaine, en fil rouge</td><td>10</td><td>1–10</td></tr></tbody></table></div><div class="visionneuse">
+    <div class="ecran"><div class="cadre" style="--w:1280;--h:860"><img src="img/atelier_calendrier-fr.png" alt="" width="1280" height="860" loading="lazy"><span class="zone" data-n="1" style="left:19.77%;top:29.77%;width:18.75%;height:4.42%"></span><span class="zone large" data-n="2" style="left:19.84%;top:53.14%;width:59.87%;height:100%"></span><button type="button" class="mk" data-n="1" style="left:19.77%;top:29.77%" aria-label="1">1</button><button type="button" class="mk" data-n="2" style="left:19.84%;top:53.14%" aria-label="2">2</button><button type="button" class="loupe" aria-label="Agrandir l’image">⤢</button></div></div>
+    <div class="panneau"><p class="aide-clic">Cliquez sur un numéro, ou sur « Suivant ».</p><ol class="gestes"><li data-n="1"><button type="button" class="geste" data-n="1"><span class="pastille">1</span><span class="texte">Choisir un rythme.</span></button></li><li data-n="2"><button type="button" class="geste" data-n="2"><span class="pastille">2</span><span class="texte">Puis l’ajuster, séance par séance.</span></button></li></ol></div>
+  </div></section>
+<section class="etape" id="e40" data-i="39" data-ip="7">
+    <p class="fil"><span class="num">8</span>L’adapter à votre cours</p>
+    <h2>Idées</h2><ul class="idees"><li><strong>Années guidées ou libres :</strong> une seule décision pour concentrer la classe sur un outil ; trois pour explorer.</li><li><strong>Ouvrir les décisions peu à peu :</strong> les étudiants tirent d’abord le maximum de ce que la clinique a déjà, avant de pouvoir agrandir.</li><li><strong>Un autre scénario de départ :</strong> « Redressement sous contrainte » pour une séance de crise.</li><li><strong>Comptes simples ou détaillés :</strong> selon le niveau en gestion de votre public.</li><li><strong>Un seul réglage changé</strong> pour discuter un mécanisme : la sensibilité au prix, les départs après un refus, la fatigue de l’équipe.</li><li><strong>Pour la semaine ULiège :</strong> le carnet des étudiants et la semaine de l’enseignant (débriefs, réflexions attendues) existent déjà.</li></ul></section>
+</div>
+<div class="pied"><button type="button" class="btn" data-dir="-1">← Précédent</button><span class="ou"></span><button type="button" class="btn primaire" data-dir="1">Suivant →</button></div>
+</main>
+</div>
+<div class="agrandi" role="dialog" aria-modal="true"><button type="button" class="btn">Fermer ✕</button><img alt=""></div>
+<script>
+(() => {
+  const H = document.documentElement; H.classList.add("tour");
+  const etapes = [...document.querySelectorAll(".etape")];
+  const scene = document.querySelector(".scene"), ou = document.querySelector(".pied .ou"), barre = document.querySelector(".barre-progres i");
+  const precB = document.querySelector('[data-dir="-1"]'), suivB = document.querySelector('[data-dir="1"]');
+  const total = etapes.length - 1, T = {"etape":"Étape","sur":"sur","suiv":"Suivant","fin":"Fin du guide","clic":"Cliquez sur un numéro, ou sur « Suivant »."};
+  let i = 0, n = 0;
+  const marqueurs = (e) => [...e.querySelectorAll(".mk")].map((m) => m.dataset.n);
+  function focus(e, num) {
+    n = num;
+    const cadre = e.querySelector(".cadre"); if (!cadre) return;
+    cadre.classList.toggle("focus", !!num);
+    e.querySelectorAll(".mk, .zone, .geste").forEach((x) => x.classList.toggle("actif", x.dataset.n === String(num)));
+  }
+  function montrer(k, depuisHash) {
+    i = Math.max(0, Math.min(etapes.length - 1, k));
+    etapes.forEach((e, j) => e.classList.toggle("vue", j === i));
+    const e = etapes[i];
+    // The screenshots of this step and the next load now, so a step never opens blank.
+    [e, etapes[i + 1]].filter(Boolean).forEach((x) => x.querySelectorAll("img[loading=lazy]").forEach((im) => { im.loading = "eager"; }));
+    focus(e, 0);
+    scene.scrollTop = 0;
+    const ip = e.dataset.ip;
+    document.querySelectorAll(".m-partie").forEach((p) => p.classList.toggle("ouvert", p.dataset.ip === ip));
+    document.querySelectorAll("nav.menu a").forEach((a) => a.classList.toggle("courant", a.getAttribute("href") === "#" + e.id));
+    ou.innerHTML = i ? "<span class='long'>" + T.etape + " </span>" + i + "<span class='long'> " + T.sur + " </span><span class='court'>/</span>" + total : "";
+    barre.style.width = (i / total * 100) + "%";
+    precB.disabled = i === 0;
+    suivB.textContent = i === etapes.length - 1 ? T.fin : T.suiv + " →";
+    suivB.disabled = i === etapes.length - 1 && !marqueurs(e).length;
+    if (!depuisHash && location.hash !== "#" + e.id) history.replaceState(null, "", "#" + e.id);
+    H.classList.remove("menu-ouvert");
+  }
+  // « Next » walks the numbers of the step, then moves on; « Previous » the other way.
+  function avancer(dir) {
+    const e = etapes[i], m = marqueurs(e), k = m.indexOf(String(n));
+    if (dir > 0 && k < m.length - 1) return focus(e, m[k + 1]);
+    if (dir < 0 && k > 0) return focus(e, m[k - 1]);
+    if (dir < 0 && k === 0) return focus(e, 0);
+    montrer(i + dir);
+  }
+  document.addEventListener("click", (ev) => {
+    const d = ev.target.closest("[data-dir]"); if (d) { avancer(Number(d.dataset.dir)); return; }
+    const m = ev.target.closest(".mk, .geste"); if (m) { const e = m.closest(".etape"); focus(e, n === m.dataset.n && e.querySelector(".cadre.focus") ? 0 : m.dataset.n); return; }
+    const a = ev.target.closest('a[href^="#e"]'); if (a) { ev.preventDefault(); montrer(Number(a.getAttribute("href").slice(2))); return; }
+    if (ev.target.closest(".bouton-menu")) { const o = H.classList.toggle("menu-ouvert"); ev.target.closest(".bouton-menu").setAttribute("aria-expanded", o); return; }
+    if (ev.target.closest(".loupe")) { const g = document.querySelector(".agrandi"); g.querySelector("img").src = ev.target.closest(".cadre").querySelector("img").src; g.classList.add("ouvert"); return; }
+    if (ev.target.closest(".agrandi")) { document.querySelector(".agrandi").classList.remove("ouvert"); return; }
+    if (H.classList.contains("menu-ouvert") && !ev.target.closest("nav.menu")) H.classList.remove("menu-ouvert");
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") { document.querySelector(".agrandi").classList.remove("ouvert"); H.classList.remove("menu-ouvert"); }
+    if (/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    if (ev.key === "ArrowRight") avancer(1);
+    if (ev.key === "ArrowLeft") avancer(-1);
+  });
+  window.addEventListener("hashchange", () => { const k = Number(location.hash.slice(2)); if (Number.isFinite(k)) montrer(k, true); });
+  const k = Number(location.hash.slice(2));
+  montrer(Number.isFinite(k) && location.hash.startsWith("#e") ? k : 0, true);
+})();
+</script>
+</body>
+</html>
